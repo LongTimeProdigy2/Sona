@@ -50,6 +50,7 @@ client.on('message', async msg => {
         if(!(channelId in channelList)){
             channelList[roomId] = new Channel(voiceChannel);
             console.log('first: ' + roomId);
+            console.log(1111);
         }
         else{
             console.log('second: ' + roomId);
