@@ -1,9 +1,12 @@
+const youtube = require('./Youtube');
+
 module.exports = class Channel{
-    constructor(voiceChannel){
+    constructor(voiceChannel, leaveCallBack){
         this.channel = voiceChannel;
         this.connection = null;
         this.dispatcher = null;
         this.songs = [];
+        this.leaveCallBack = leaveCallBack;
     }
 
     async Join(){
@@ -11,43 +14,17 @@ module.exports = class Channel{
     }
     // static FindMp3(){}
     // static FindYoutube(){}
-    AddSong(message){
+    async AddSong(url){
         // url 또는 검색하여 url 설정
-        // if(message.includes('www.youtube.com/')){
-        //     console.log('url이므로 직접 재생을 합니다.');
-        //     let url = message;
+        let title = await youtube.DownloadMP3(url);
+        this.songs.push(title);
 
-        //     if (!url) return msg.reply("재생할 주소를 입력해주세요.");
-        //     await DownloadAudioFromYoutube(url, null, voiceChannel);
-        // }
-        // else{
-        //     let keyword = msg.content.slice(3);
-        //     let count = 10;
-        //     console.log(keyword, '검색을 시작합니다.');
+        if(this.songs.length === 1){
+            this.Play();
+        }
+        else{
 
-        //     function fancyTimeFormat(duration)
-        //     {   
-        //         // Hours, minutes and seconds
-        //         var mins = Math.floor((duration % 3600) / 60);
-        //         var secs = duration % 60;
-
-        //         // Output like "1:01" or "4:03:59" or "123:03:59"
-        //         var ret = + mins + ':' + secs;
-        //         return ret;
-        //     }
-
-        //     await FindURLFromYoutube(keyword, count)
-        //     .then(datas => {
-        //         findList[user] = datas;
-        //         msg.reply(keyword + ' 검색결과\n' + 
-        //         '1. ' + datas[0].title + ' ( ' + fancyTimeFormat(datas[0].duration) + ' )' + '\n' +
-        //         '2. ' + datas[1].title + ' ( ' + fancyTimeFormat(datas[1].duration) + ' )' + '\n' +
-        //         '3. ' + datas[2].title + ' ( ' + fancyTimeFormat(datas[2].duration) + ' )' + '\n' +
-        //         '4. ' + datas[3].title + ' ( ' + fancyTimeFormat(datas[3].duration) + ' )' + '\n' +
-        //         '5. ' + datas[4].title + ' ( ' + fancyTimeFormat(datas[4].duration) + ' )'
-        //         );
-        //     });
-        // }
+        }
     }
     // Play(){}
     async Play(){
@@ -55,10 +32,12 @@ module.exports = class Channel{
             this.connection = await this.channel.join();
         }
 
-        // let song = this.songs.shift();
-        // if(song === null) return;
+        let song = this.songs.shift();
+        if(song === null) return;
 
-        this.dispatcher = this.connection.play('./musics/With_Me.mp3');
+        console.log('../musics/' + song + '.mp3');
+
+        this.dispatcher = this.connection.play('../musics/' + song + '.mp3');
         this.dispatcher.on('finish', () => {
             if(this.songs.length === 0){
                 this.Leave();
@@ -76,5 +55,7 @@ module.exports = class Channel{
         this.channel = null;
         this.connection = null;
         this.dispatcher = null;
+        this.leaveCallBack();
+        this.leaveCallBack = null;
     }
 }

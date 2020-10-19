@@ -1,14 +1,18 @@
 const request = require('request');
+const fs = require('fs');
 
 const youtube_node = require("youtube-node");
 const finder = new youtube_node();
+const youtube_api_key = 'AIzaSyAf0mXbOQKdFOktMsCiDKkbonGq-NZ_rKU';
+finder.setKey(youtube_api_key);
 
 const ytdl = require("ytdl-core");
 
 const limitCount = 10;
 
 module.exports = class Youtube{
-    static GetList(keyword){
+    static Search(keyword){
+        console.log(keyword);
         return new Promise((resolve, reject) => {
             // youtube.addParam('order', 'rating');
             // youtube.addParam('type', 'video');
@@ -16,8 +20,10 @@ module.exports = class Youtube{
             finder.addParam('regionCode', 'kr');
             // youtube.addParam('videoDuration', 'medium');    // any / long(up 20) / medium(4~20) / short(down 4);
     
-            finder.search(keyword, limitCount, async (err, result) => {
+            finder.search(keyword, limitCount, {}, async (err, result) => {
                 if(err) reject(err);
+
+                console.log(result);
     
                 let items = result['items'];
                 let urls = [];
@@ -27,7 +33,7 @@ module.exports = class Youtube{
                     let video_id = it["id"]["videoId"];
                     if(video_id === undefined) continue;
                     let url = "https://www.youtube.com/watch?v=" + video_id;
-                    let duration = await this.GetDurationFromYoutube(video_id);
+                    let duration = await Youtube.GetDurationFromYoutube(video_id);
                     console.log("제목 : " + title);
                     console.log("URL : " + url);
                     console.log("duration : " + duration);
@@ -41,19 +47,21 @@ module.exports = class Youtube{
         });
     }
 
-    GetDurationFromYoutube(id){
+    static GetDurationFromYoutube(id){
+        console.log(id);
         return new Promise((resolve, reject) => {
             let url = 'https://www.googleapis.com/youtube/v3/videos?id=' + 
             id + '&part=contentDetails&key=' + youtube_api_key;
     
             request(url, (err, res, body) => {
+                console.log(body);
                 let result = JSON.parse(body);
-                resolve(this.convert_time(result.items[0].contentDetails.duration));
+                resolve(Youtube.convert_time(result.items[0].contentDetails.duration));
             });
         });
     }
 
-    convert_time(duration) {
+    static convert_time(duration) {
         var a = duration.match(/\d+/g);
     
         if (duration.indexOf('M') >= 0 && duration.indexOf('H') == -1 && duration.indexOf('S') == -1) {
@@ -85,4 +93,32 @@ module.exports = class Youtube{
         }
         return duration
     }
+
+    static GetTitleFromYoutube(id){
+        return new Promise((resolve, reject) => {
+            let url = 'https://www.googleapis.com/youtube/v3/videos?id=' + 
+            id + '&part=snippet&key=' + youtube_api_key;
+    
+            request(url, (err, res, body) => {
+                let result = JSON.parse(body);
+                resolve(result.items[0].id);
+            });
+        });
+    }
+
+    /**
+ * 
+ * @param {string} url 
+ * @param {string} title 
+ */
+    static DownloadMP3(url){
+        return new Promise(async function(resolve, reject){
+            let title = await Youtube.GetTitleFromYoutube(url.split('=')[1]);
+            const stream = ytdl(url, {filter: 'audioonly'});
+            stream.pipe(fs.createWriteStream('./musics/' + title + '.mp3'))
+            .on('finish', () => {
+                resolve(title);
+            });
+    });
+}
 }
