@@ -23,8 +23,6 @@ module.exports = class Youtube{
             finder.search(keyword, limitCount, {}, async (err, result) => {
                 if(err) reject(err);
 
-                console.log(result);
-    
                 let items = result['items'];
                 let urls = [];
                 for (var i in items) { 

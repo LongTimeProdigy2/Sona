@@ -7,6 +7,8 @@ const client = new Discord.Client();
 
 const queue = new Map();
 
+const findList = new Map();
+
 client.once("ready", () => {
   console.log("Ready!");
 });
@@ -25,18 +27,51 @@ client.on("message", async message => {
 
     const serverQueue = queue.get(message.guild.id);
 
+    const user = message.author.id;
+
     if (message.content.startsWith(`${prefix}p`) || message.content.startsWith(`${prefix}ㅔ`)) {
         if(message.content.includes('www.youtube.com/')){
-            execute(message, serverQueue);
+            execute(message, serverQueue, message.content.split(" "));
         }
         else{
-            let result = await youtube.Search(message.content.split(" ")[1]);
-            console.log(result);
+            function fancyTimeFormat(duration)
+            {   
+                // Hours, minutes and seconds
+                var mins = Math.floor((duration % 3600) / 60);
+                var secs = duration % 60;
+
+                // Output like "1:01" or "4:03:59" or "123:03:59"
+                var ret = + mins + ':' + secs;
+                return ret;
+            }
+            
+            let keyword = message.content.slice(3);
+            console.log(keyword);
+            await youtube.Search(keyword)
+            .then(datas => {
+                findList.set(user, datas);
+                message.reply(keyword + ' 검색결과\n' + 
+                '1. ' + datas[0].title + ' ( ' + fancyTimeFormat(datas[0].duration) + ' )' + '\n' +
+                '2. ' + datas[1].title + ' ( ' + fancyTimeFormat(datas[1].duration) + ' )' + '\n' +
+                '3. ' + datas[2].title + ' ( ' + fancyTimeFormat(datas[2].duration) + ' )' + '\n' +
+                '4. ' + datas[3].title + ' ( ' + fancyTimeFormat(datas[3].duration) + ' )' + '\n' +
+                '5. ' + datas[4].title + ' ( ' + fancyTimeFormat(datas[4].duration) + ' )'
+                );
+            });
         }
         return;
     }
     else if(!isNaN(Number(message.content[1])) && typeof Number(message.content[1]) === 'number'){
         console.log(1111);
+        if(findList.has(user)){
+            let result = findList.get(user)[message.content[1]];
+            let url = result.url;
+            console.log(url);
+            execute(message, serverQueue, ['?p', url]);
+        }
+        else{
+            message.reply('검색할 키워드를 먼저 입력하십시오.');
+        }
     }
     else if(message.content.startsWith(`${prefix}n`) || message.content.startsWith(`${prefix}ㅜ`)){
         skip(message, serverQueue);
@@ -59,9 +94,7 @@ client.on("message", async message => {
     }
 });
 
-async function execute(message, serverQueue) {
-    const args = message.content.split(" ");
-
+async function execute(message, serverQueue, args) {
     const voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return message.channel.send("음성 채널에 먼저 입장하여 주세요.");
 
