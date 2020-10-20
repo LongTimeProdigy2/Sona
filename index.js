@@ -26,60 +26,39 @@ client.on("message", async message => {
     if (!message.content.startsWith(prefix)) return;
 
     const serverQueue = queue.get(message.guild.id);
-
     const user = message.author.id;
-
-    if (message.content.startsWith(`${prefix}p`) || message.content.startsWith(`${prefix}ㅔ`)) {
+    if(message.content.startsWith(`${prefix}j`) || message.content.startsWith(`${prefix}ㅓ`)){
+        join(message);
+    }
+    else if(message.content.startsWith(`${prefix}q`) || message.content.startsWith(`${prefix}ㅂ`)){
+        leave(message.guild, serverQueue);
+    }
+    else if(message.content.startsWith(`${prefix}p`) || message.content.startsWith(`${prefix}ㅔ`)){
         if(message.content.includes('www.youtube.com/')){
-            execute(message, serverQueue, message.content.split(" "));
+            execute(message, message.content.split(" "));
         }
         else{
-            function fancyTimeFormat(duration)
-            {   
-                // Hours, minutes and seconds
-                var mins = Math.floor((duration % 3600) / 60);
-                var secs = duration % 60;
-
-                // Output like "1:01" or "4:03:59" or "123:03:59"
-                var ret = + mins + ':' + secs;
-                return ret;
-            }
-            
-            let keyword = message.content.slice(3);
-            console.log(keyword);
-            await youtube.Search(keyword)
-            .then(datas => {
-                findList.set(user, datas);
-                message.reply(keyword + ' 검색결과\n' + 
-                '1. ' + datas[0].title + ' ( ' + fancyTimeFormat(datas[0].duration) + ' )' + '\n' +
-                '2. ' + datas[1].title + ' ( ' + fancyTimeFormat(datas[1].duration) + ' )' + '\n' +
-                '3. ' + datas[2].title + ' ( ' + fancyTimeFormat(datas[2].duration) + ' )' + '\n' +
-                '4. ' + datas[3].title + ' ( ' + fancyTimeFormat(datas[3].duration) + ' )' + '\n' +
-                '5. ' + datas[4].title + ' ( ' + fancyTimeFormat(datas[4].duration) + ' )'
-                );
-            });
+            SearchYoutube(message);
         }
-        return;
     }
     else if(!isNaN(Number(message.content[1])) && typeof Number(message.content[1]) === 'number'){
-        console.log(1111);
         if(findList.has(user)){
             let result = findList.get(user)[message.content[1]];
             let url = result.url;
-            console.log(url);
-            execute(message, serverQueue, ['?p', url]);
+            execute(message, ['?p', url]);
         }
         else{
             message.reply('검색할 키워드를 먼저 입력하십시오.');
         }
     }
+    else if(message.content.startsWith(`${prefix}l`) || message.content.startsWith(`${prefix}ㅣ`)){
+        list(message, serverQueue);
+    }
     else if(message.content.startsWith(`${prefix}n`) || message.content.startsWith(`${prefix}ㅜ`)){
         skip(message, serverQueue);
-        return;
     }
     else if(message.content.startsWith(`${prefix}s`) || message.content.startsWith(`${prefix}ㄴ`)){
         stop(message, serverQueue);
-        return;
     }
     else if(message.content.startsWith(`${prefix}h`) || message.content.startsWith(`${prefix}ㅗ`)){
         message.channel.send(
@@ -94,7 +73,7 @@ client.on("message", async message => {
     }
 });
 
-async function execute(message, serverQueue, args) {
+async function join(message){
     const voiceChannel = message.member.voice.channel;
     if (!voiceChannel) return message.channel.send("음성 채널에 먼저 입장하여 주세요.");
 
@@ -103,39 +82,64 @@ async function execute(message, serverQueue, args) {
         return message.channel.send("음성 채널에 먼저 입장하여 주세요.");
     }
 
-    const songInfo = await ytdl.getInfo(args[1]);
-    const song = {
-        title: songInfo.title,
-        url: songInfo.video_url
-    };
-
-    if (!serverQueue) {
+    if (!queue.has(message.guild.id)) {
         const queueContruct = {
             textChannel: message.channel,
             voiceChannel: voiceChannel,
             connection: null,
             songs: [],
             volume: 5,
-            playing: true
+            playing: false
         };
 
         queue.set(message.guild.id, queueContruct);
 
-        queueContruct.songs.push(song);
-
         try {
             var connection = await voiceChannel.join();
             queueContruct.connection = connection;
-            play(message.guild, queueContruct.songs[0]);
         } catch (err) {
             console.log(err);
             queue.delete(message.guild.id);
             return message.channel.send(err);
         }
     }
-    else{
-        serverQueue.songs.push(song);
-        return message.channel.send(`${song.title} 재생목록에 추가되었습니다!`);
+}
+
+async function leave(guild, serverQueue){
+    if(serverQueue){
+        serverQueue.voiceChannel.leave();
+        queue.delete(guild.id);
+    }
+}
+
+async function SearchYoutube(message){
+    function fancyTimeFormat(duration)
+    {   
+        // Hours, minutes and seconds
+        var mins = Math.floor((duration % 3600) / 60);
+        var secs = duration % 60;
+
+        // Output like "1:01" or "4:03:59" or "123:03:59"
+        var ret = + mins + ':' + secs;
+        return ret;
+    }
+    
+    const user = message.author.id;
+    let keyword = message.content.slice(3);
+    try{
+        await youtube.Search(keyword)
+        .then(datas => {
+            findList.set(user, datas);
+            let ret = keyword + "검색결과\n";
+            for(let i = 0; i < datas.length; ++i){
+                ret += i + '. ' + datas[i].title + '(' + fancyTimeFormat(datas[i].duration) + ")\n"
+            }
+            message.reply(ret);
+        });
+    }
+    catch(err){
+        console.log(err);
+        message.reply('유튜브 검색 도중 오류가 발생했습니다.');
     }
 }
 
@@ -154,7 +158,34 @@ function stop(message, serverQueue) {
         return message.channel.send("You have to be in a voice channel to stop the music!");
 
     serverQueue.songs = [];
-    serverQueue.connection.dispatcher.end();
+    if(serverQueue.connection.dispatcher){
+        serverQueue.connection.dispatcher.end();
+    }
+}
+
+async function execute(message, args) {
+    join(message);
+
+    const serverQueue = queue.get(message.guild.id);
+    if (serverQueue) {
+        const songInfo = await ytdl.getInfo(args[1]);
+        const song = {
+            title: songInfo.videoDetails.title,
+            url: songInfo.videoDetails.video_url,
+            length: songInfo.videoDetails.lengthSeconds
+        };
+
+        if(serverQueue.playing){
+            serverQueue.songs.push(song);
+            message.channel.send(`${song.title} 재생목록에 추가되었습니다!`);
+        }
+        else{
+            play(message.guild, song);
+        }
+    }
+    else{
+        message.reply('재생이 불가합니다.');
+    }
 }
 
 function play(guild, song) {
@@ -165,15 +196,32 @@ function play(guild, song) {
         return;
     }
 
+    serverQueue.playing = true;
     const dispatcher = serverQueue.connection
-        .play(ytdl(song.url))
+        .play(ytdl(song.url, {quality: 'highestaudio', highWaterMark: 1 << 25}))
         .on("finish", () => {
-            serverQueue.songs.shift();
-            play(guild, serverQueue.songs[0]);
+            let tempSong = serverQueue.songs.shift();
+            play(guild, tempSong);
         })
         .on("error", error => console.error(error));
         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-        serverQueue.textChannel.send(`Now Playing: **${song.title}**`);
+        serverQueue.textChannel.send(`Now Playing: **${song.title}(${song.length})**`);
+}
+
+function list(message, serverQueue){
+    if(serverQueue){
+        let songs = serverQueue.songs;
+        if(songs.length === 0){
+            message.reply('현재 리스트에 재생할 곡이 없습니다.');
+        }
+        else{
+            let ret = "남은 곡 수: " + songs.length + '\n';
+            for(let i = 0; i < songs.length; ++i){
+                ret += (i + 1) + '. ' + songs[i].title + '(' + songs[i].length + ' soconds)' + '\n';
+            }
+            message.reply(ret);
+        }
+    }
 }
 
 client.login(token);

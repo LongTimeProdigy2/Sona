@@ -3,7 +3,7 @@ const fs = require('fs');
 
 const youtube_node = require("youtube-node");
 const finder = new youtube_node();
-const youtube_api_key = 'AIzaSyAf0mXbOQKdFOktMsCiDKkbonGq-NZ_rKU';
+const youtube_api_key = 'AIzaSyCg6rZlfVbtCxRgzAdqc3ehzK9l_t0sLn8';
 finder.setKey(youtube_api_key);
 
 const ytdl = require("ytdl-core");
@@ -12,7 +12,6 @@ const limitCount = 10;
 
 module.exports = class Youtube{
     static Search(keyword){
-        console.log(keyword);
         return new Promise((resolve, reject) => {
             // youtube.addParam('order', 'rating');
             // youtube.addParam('type', 'video');
@@ -26,18 +25,22 @@ module.exports = class Youtube{
                 let items = result['items'];
                 let urls = [];
                 for (var i in items) { 
-                    let it = items[i];
-                    let title = it["snippet"]["title"];
-                    let video_id = it["id"]["videoId"];
-                    if(video_id === undefined) continue;
-                    let url = "https://www.youtube.com/watch?v=" + video_id;
-                    let duration = await Youtube.GetDurationFromYoutube(video_id);
-                    console.log("제목 : " + title);
-                    console.log("URL : " + url);
-                    console.log("duration : " + duration);
-                    console.log("-----------");
-    
-                    urls.push({title: title, duration: duration, url: url});
+                    try{
+                        let it = items[i];
+                        let title = it["snippet"]["title"];
+                        let video_id = it["id"]["videoId"];
+                        let url = "https://www.youtube.com/watch?v=" + video_id;
+                        // let duration = await Youtube.GetDurationFromYoutube(video_id);
+                        console.log("제목 : " + title);
+                        console.log("URL : " + url);
+                        // console.log("duration : " + duration);
+                        console.log("-----------");
+        
+                        urls.push({title: title, duration: 0, url: url});
+                    }
+                    catch(err){
+                        console.log(err);
+                    }
                 }
     
                 resolve(urls);
@@ -46,15 +49,20 @@ module.exports = class Youtube{
     }
 
     static GetDurationFromYoutube(id){
-        console.log(id);
         return new Promise((resolve, reject) => {
             let url = 'https://www.googleapis.com/youtube/v3/videos?id=' + 
             id + '&part=contentDetails&key=' + youtube_api_key;
     
             request(url, (err, res, body) => {
-                console.log(body);
+                if(err) reject();
+
                 let result = JSON.parse(body);
-                resolve(Youtube.convert_time(result.items[0].contentDetails.duration));
+                try{
+                    resolve(Youtube.convert_time(result.items[0].contentDetails.duration));
+                }
+                catch(err){
+                    reject(body);
+                }
             });
         });
     }
