@@ -1,9 +1,10 @@
 const request = require('request');
 const fs = require('fs');
 
+const tokens = require("../token.json");
 const youtube_node = require("youtube-node");
 const finder = new youtube_node();
-const youtube_api_key = 'AIzaSyCg6rZlfVbtCxRgzAdqc3ehzK9l_t0sLn8';
+const youtube_api_key = tokens.youtube;
 finder.setKey(youtube_api_key);
 
 const ytdl = require("ytdl-core");
