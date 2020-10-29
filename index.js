@@ -166,22 +166,31 @@ function stop(message, serverQueue) {
 async function execute(message, args) {
     join(message);
 
+    console.log("excute: ", args);
+
     const serverQueue = queue.get(message.guild.id);
     if (serverQueue) {
-        const songInfo = await ytdl.getInfo(args[1]);
-        const song = {
-            title: songInfo.videoDetails.title,
-            url: songInfo.videoDetails.video_url,
-            length: songInfo.videoDetails.lengthSeconds
-        };
+        try{
+            const songInfo = await ytdl.getInfo(args[1]);
+            const song = {
+                title: songInfo.videoDetails.title,
+                url: songInfo.videoDetails.video_url,
+                length: songInfo.videoDetails.lengthSeconds
+            };
 
-        if(serverQueue.playing){
-            serverQueue.songs.push(song);
-            message.channel.send(`${song.title} 재생목록에 추가되었습니다!`);
+            if(serverQueue.playing){
+                serverQueue.songs.push(song);
+                message.channel.send(`${song.title} 재생목록에 추가되었습니다!`);
+            }
+            else{
+                play(message.guild, song);
+            }
         }
-        else{
-            play(message.guild, song);
+        catch(err){
+            console.log(err);
+            message.reply('동영상 정보 찾는 중에 오류가 발생했습니다.' + '```\n' + err + '\n```');
         }
+        
     }
     else{
         message.reply('재생이 불가합니다.');

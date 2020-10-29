@@ -14,7 +14,7 @@ module.exports = class Youtube{
     static Search(keyword){
         return new Promise((resolve, reject) => {
             // youtube.addParam('order', 'rating');
-            // youtube.addParam('type', 'video');
+            finder.addParam('type', 'video');
             // youtube.addParam('videoLicense', 'creativeCommon');
             finder.addParam('regionCode', 'kr');
             // youtube.addParam('videoDuration', 'medium');    // any / long(up 20) / medium(4~20) / short(down 4);
