@@ -46,7 +46,8 @@ client.on("message", async message => {
             let value = findList.get(user);
             let musicData = value.data[message.content[1]];
             let url = musicData.url;
-            value.message.edit(`${musicData.title} 재생을 시작합니다.`);
+            value.message.delete();
+            // value.message.edit(`${musicData.title} 재생을 시작합니다.`);
             execute(message, ['?p', url]);
         }
         else{
