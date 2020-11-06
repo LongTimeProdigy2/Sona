@@ -43,8 +43,10 @@ client.on("message", async message => {
     }
     else if(!isNaN(Number(message.content[1])) && typeof Number(message.content[1]) === 'number'){
         if(findList.has(user)){
-            let result = findList.get(user)[message.content[1]];
-            let url = result.url;
+            let value = findList.get(user);
+            let musicData = value.data[message.content[1]];
+            let url = musicData.url;
+            value.message.edit(`${musicData.title} 재생을 시작합니다.`);
             execute(message, ['?p', url]);
         }
         else{
@@ -129,12 +131,14 @@ async function SearchYoutube(message){
     try{
         await youtube.Search(keyword)
         .then(datas => {
-            findList.set(user, datas);
             let ret = keyword + "검색결과\n";
             for(let i = 0; i < datas.length; ++i){
                 ret += i + '. ' + datas[i].title + '(' + fancyTimeFormat(datas[i].duration) + ")\n"
             }
-            message.reply(ret);
+            message.reply(ret)
+            .then((msg) => {
+                findList.set(user, {message: msg, data: datas});
+            })
         });
     }
     catch(err){
