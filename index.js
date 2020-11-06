@@ -211,6 +211,7 @@ function play(guild, song) {
     }
 
     serverQueue.playing = true;
+    console.log(song.title, "재생을 시작합니다.");
     const dispatcher = serverQueue.connection
         .play(ytdl(song.url, {quality: 'highestaudio', highWaterMark: 1 << 25}))
         .on("finish", () => {
