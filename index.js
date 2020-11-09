@@ -100,12 +100,21 @@ async function join(message){
         try {
             var connection = await voiceChannel.join();
             queueContruct.connection = connection;
+            connection.on("disconnect", () => {
+                console.log("disconnect");
+                DisConnection(message);
+            });
         } catch (err) {
             console.log(err);
-            queue.delete(message.guild.id);
-            return message.channel.send(err);
+            message.channel.send(err);
+            DisConnection(message);
         }
     }
+}
+
+function DisConnection(message){
+    console.log("delete queue", message.guild.id);
+    queue.delete(message.guild.id);
 }
 
 async function leave(guild, serverQueue){
