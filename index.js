@@ -176,16 +176,17 @@ function stop(message, serverQueue) {
 }
 
 async function execute(message, args) {
-    join(message);
+    await join(message);
 
     const serverQueue = queue.get(message.guild.id);
     if (serverQueue) {
         try{
-            const songInfo = await ytdl.getInfo(args[1]);
+            // const songInfo = await ytdl.getInfo(args[1], {filter: 'audioonly'});
+            const title = await youtube.GetTitleFromYoutube(args[1].split("=")[1]);
             const song = {
-                title: songInfo.videoDetails.title,
-                url: songInfo.videoDetails.video_url,
-                length: songInfo.videoDetails.lengthSeconds
+                title: title,
+                url: args[1],
+                length: 0
             };
 
             if(serverQueue.playing){

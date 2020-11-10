@@ -1,13 +1,10 @@
 const request = require('request');
-const fs = require('fs');
 
 const tokens = require("../token.json");
 const youtube_node = require("youtube-node");
 const finder = new youtube_node();
 const youtube_api_key = tokens.youtube;
 finder.setKey(youtube_api_key);
-
-const ytdl = require("ytdl-core");
 
 const limitCount = 10;
 
@@ -32,10 +29,6 @@ module.exports = class Youtube{
                         let video_id = it["id"]["videoId"];
                         let url = "https://www.youtube.com/watch?v=" + video_id;
                         // let duration = await Youtube.GetDurationFromYoutube(video_id);
-                        console.log("제목 : " + title);
-                        console.log("URL : " + url);
-                        // console.log("duration : " + duration);
-                        console.log("-----------");
         
                         urls.push({title: title, duration: 0, url: url});
                     }
@@ -108,24 +101,8 @@ module.exports = class Youtube{
     
             request(url, (err, res, body) => {
                 let result = JSON.parse(body);
-                resolve(result.items[0].id);
+                resolve(result.items[0].snippet.title);
             });
         });
     }
-
-    /**
- * 
- * @param {string} url 
- * @param {string} title 
- */
-    static DownloadMP3(url){
-        return new Promise(async function(resolve, reject){
-            let title = await Youtube.GetTitleFromYoutube(url.split('=')[1]);
-            const stream = ytdl(url, {filter: 'audioonly'});
-            stream.pipe(fs.createWriteStream('./musics/' + title + '.mp3'))
-            .on('finish', () => {
-                resolve(title);
-            });
-    });
-}
 }
