@@ -42,6 +42,16 @@ module.exports = class Youtube{
         });
     }
 
+    static GetInfoById(id){
+        return new Promise((resolve, reject) => {
+            finder.getById(id, (err, data) => {
+                if(err) reject(err);
+
+                resolve(data);
+            }); 
+        });
+    }
+
     static GetDurationFromYoutube(id){
         return new Promise((resolve, reject) => {
             let url = 'https://www.googleapis.com/youtube/v3/videos?id=' + 

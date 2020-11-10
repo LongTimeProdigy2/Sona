@@ -182,9 +182,9 @@ async function execute(message, args) {
     if (serverQueue) {
         try{
             // const songInfo = await ytdl.getInfo(args[1], {filter: 'audioonly'});
-            const title = await youtube.GetTitleFromYoutube(args[1].split("=")[1]);
+            const info = await youtube.GetInfoById(args[1].split("=")[1]);
             const song = {
-                title: title,
+                title: info.items[0].snippet.title,
                 url: args[1],
                 length: 0
             };
