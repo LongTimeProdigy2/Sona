@@ -171,8 +171,6 @@ function stop(message, serverQueue) {
 async function execute(message, args) {
     join(message);
 
-    console.log("excute: ", args);
-
     const serverQueue = queue.get(message.guild.id);
     if (serverQueue) {
         try{
@@ -218,7 +216,10 @@ function play(guild, song) {
             let tempSong = serverQueue.songs.shift();
             play(guild, tempSong);
         })
-        .on("error", error => console.error(error));
+        .on("error", error => {
+            console.error("플레이 도중 에러가 발생했습니다.\n", error);
+            // serverQueue.textChannel.send(`플레이 도중 에러가 발생했습니다.\n \`\`\`${error}\`\`\``);
+        });
         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
         serverQueue.textChannel.send(`Now Playing: **${song.title}(${song.length})**`);
 }
