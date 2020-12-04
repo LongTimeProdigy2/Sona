@@ -72,7 +72,7 @@ client.on("message", async message => {
             );
     }
     else {
-        message.channel.send("You need to enter a valid command!");
+        message.channel.send("올바른 값을 입력해주세요!");
     }
 });
 
@@ -141,7 +141,7 @@ async function SearchYoutube(message){
         .then(datas => {
             let ret = keyword + "검색결과\n";
             for(let i = 0; i < datas.length; ++i){
-                ret += i + '. ' + datas[i].title + '(' + fancyTimeFormat(datas[i].duration) + ")\n"
+                ret += i + '. ' + datas[i].title + ' (' + fancyTimeFormat(datas[i].duration) + ")\n"
             }
             message.reply(ret)
             .then((msg) => {
@@ -179,6 +179,7 @@ async function execute(message, args) {
     await join(message);
 
     const serverQueue = queue.get(message.guild.id);
+
     if (serverQueue) {
         try{
             // const songInfo = await ytdl.getInfo(args[1], {filter: 'audioonly'});
@@ -210,26 +211,32 @@ async function execute(message, args) {
 
 function play(guild, song) {
     const serverQueue = queue.get(guild.id);
+    if(!serverQueue){
+        return;
+    }
+
     if (!song) {
-        serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
+        leave(guild.id, serverQueue);
+        // serverQueue.voiceChannel.leave();
+        // queue.delete(guild.id);
         return;
     }
 
     serverQueue.playing = true;
     console.log(song.title, "재생을 시작합니다.");
     const dispatcher = serverQueue.connection
-        .play(ytdl(song.url, {quality: 'highestaudio', highWaterMark: 1 << 25}))
+        .play(ytdl(song.url, { filter: "audioonly", quality: 'highestaudio', highWaterMark: 1 << 25 }))
         .on("finish", () => {
             let tempSong = serverQueue.songs.shift();
             play(guild, tempSong);
         })
         .on("error", error => {
             console.error("플레이 도중 에러가 발생했습니다.\n", error);
-            // serverQueue.textChannel.send(`플레이 도중 에러가 발생했습니다.\n \`\`\`${error}\`\`\``);
+            serverQueue.textChannel.send(`플레이 도중 에러가 발생했습니다.\n \`\`\`${error}\`\`\``);
+            leave(guild.id, serverQueue);
         });
         dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-        serverQueue.textChannel.send(`Now Playing: **${song.title}(${song.length})**`);
+        serverQueue.textChannel.send(`Now Playing: **${song.title} (${song.length})**`);
 }
 
 function list(message, serverQueue){
@@ -241,7 +248,7 @@ function list(message, serverQueue){
         else{
             let ret = "남은 곡 수: " + songs.length + '\n';
             for(let i = 0; i < songs.length; ++i){
-                ret += (i + 1) + '. ' + songs[i].title + '(' + songs[i].length + ' soconds)' + '\n';
+                ret += (i + 1) + '. ' + songs[i].title + ' (' + songs[i].length + ' soconds)' + '\n';
             }
             message.reply(ret);
         }
