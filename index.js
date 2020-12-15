@@ -65,10 +65,10 @@ client.on("message", async message => {
     }
     else if(message.content.startsWith(`${prefix}h`) || message.content.startsWith(`${prefix}ㅗ`)){
         message.channel.send(
-            '?: 기본키입니다.\n' + 
-            'ㆍ p or ㅔ: play. url 또는 유튜브에서 검색할 키워드를 입력하세요.\n' + 
-            'ㆍ n or ㅜ: next\n' + 
-            'ㆍ s or ㄴ: stop'
+            '\`\`\`· ?: 기본키입니다.\n' + 
+            '· p or ㅔ: play\n\t유튜브 URL 또는 키워드를 입력하세요.\n' + 
+            '· n or ㅜ: next\n\t다음 곡으로 넘어갑니다. 곡이 없을 시 Sona가 퇴장합니다.\n' + 
+            '· s or ㄴ: stop\n\t소나가 노래를 정지하고 퇴장합니다.\`\`\`'
             );
     }
     else {
@@ -102,7 +102,8 @@ async function join(message){
             queueContruct.connection = connection;
             connection.on("disconnect", () => {
                 console.log("disconnect");
-                leave(message.guild, queueContruct);
+                // leave(message.guild, queueContruct);
+                queue.delete(message.guild.id);
             });
         } catch (err) {
             console.log(err);
@@ -114,8 +115,8 @@ async function join(message){
 
 async function leave(guild, serverQueue){
     if(serverQueue){
+        console.log("Leave: disconnect");
         serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
     }
     else{
         console.log("serverQueue empthy");
@@ -190,12 +191,12 @@ async function execute(message, args) {
                 length: 0
             };
 
+            serverQueue.songs.push(song);
             if(serverQueue.playing){
-                serverQueue.songs.push(song);
                 message.channel.send(`${song.title} 재생목록에 추가되었습니다!`);
             }
             else{
-                play(message.guild, song);
+                play(message.guild);
             }
         }
         catch(err){
@@ -209,12 +210,13 @@ async function execute(message, args) {
     }
 }
 
-function play(guild, song) {
+function play(guild) {
     const serverQueue = queue.get(guild.id);
     if(!serverQueue){
         return;
     }
 
+    let song = serverQueue.songs.shift();
     if (!song) {
         leave(guild.id, serverQueue);
         // serverQueue.voiceChannel.leave();
@@ -227,8 +229,8 @@ function play(guild, song) {
     const dispatcher = serverQueue.connection
         .play(ytdl(song.url, { filter: "audioonly", quality: 'highestaudio', highWaterMark: 1 << 25 }))
         .on("finish", () => {
-            let tempSong = serverQueue.songs.shift();
-            play(guild, tempSong);
+            // let tempSong = serverQueue.songs.shift();
+            play(guild);
         })
         .on("error", error => {
             console.error("플레이 도중 에러가 발생했습니다.\n", error);
