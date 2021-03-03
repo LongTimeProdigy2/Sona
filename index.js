@@ -101,7 +101,7 @@ function AddFood(message){
     const food = message.content.slice(5);
     if(body.indexOf(food) == -1){
         body.push(food);
-        message.reply(`${food} 메뉴가 추천 되었습니다.`);
+        message.reply(`${food} 메뉴가 추가 되었습니다.`);
         fs.writeFileSync("food.json", JSON.stringify(body));
     }
     else{
@@ -120,7 +120,7 @@ function RemoveFood(message){
         fs.writeFileSync("food.json", JSON.stringify(body));
     }
     else{
-        message.reply(`${food} 메뉴는 이미 없습니다.`);
+        message.reply(`${food} 메뉴는 이미 목록에 없습니다.`);
     }
 }
 
