@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 const {prefix, token} = require("./token.json");
 const ytdl = require("ytdl-core");
 const youtube = require("./src/Youtube");
+const fs = require("fs");
 
 const client = new Discord.Client();
 
@@ -65,16 +66,94 @@ client.on("message", async message => {
     }
     else if(message.content.startsWith(`${prefix}h`) || message.content.startsWith(`${prefix}ㅗ`)){
         message.channel.send(
-            '\`\`\`· ?: 기본키입니다.\n' + 
-            '· p or ㅔ: play\n\t유튜브 URL 또는 키워드를 입력하세요.\n' + 
-            '· n or ㅜ: next\n\t다음 곡으로 넘어갑니다. 곡이 없을 시 Sona가 퇴장합니다.\n' + 
-            '· s or ㄴ: stop\n\t소나가 노래를 정지하고 퇴장합니다.\`\`\`'
+            `\`\`\`
+· ?: 기본키입니다.
+· p or ㅔ: [play] 재생할 곡의 URL(유튜브) 또는 키워드를 입력하세요.
+· n or ㅜ: [next] 다음 곡으로 넘어갑니다. 곡이 없을 시 Sona가 퇴장합니다.
+· s or ㄴ: [stop] 소나가 노래를 정지하고 퇴장합니다.
+· 메뉴추가: 추천할 메뉴 목록에 해당 메뉴를 추가합니다.
+· 메뉴삭제: 추천할 메뉴 목록에 해당 메뉴를 제거합니다.
+· 메뉴전체: 추천할 메뉴의 모든 목록을 보여줍니다.
+· 메뉴추천: 메뉴 목록에서 하나를 뽑아와 메뉴를 추천합니다.
+            \`\`\``
             );
+    }
+    else if(message.content.startsWith(`${prefix}메뉴추가`)){
+        AddFood(message);
+    }
+    else if(message.content.startsWith(`${prefix}메뉴삭제`)){
+        RemoveFood(message);
+    }
+    else if(message.content.startsWith(`${prefix}메뉴추천`)){
+        RandomFood(message);
+    }
+    else if(message.content.startsWith(`${prefix}메뉴전체`)){
+        AllFood(message);
     }
     else {
         message.channel.send("올바른 값을 입력해주세요!");
     }
 });
+
+function AddFood(message){
+    const dataBuffer = fs.readFileSync('./food.json');
+    const body = JSON.parse(dataBuffer);
+    const food = message.content.slice(5);
+    if(body.indexOf(food) == -1){
+        body.push(food);
+        message.reply(`${food} 메뉴가 추천 되었습니다.`);
+        fs.writeFileSync("food.json", JSON.stringify(body));
+    }
+    else{
+        message.reply(`${food} 메뉴는 중복입니다.`);
+    }
+}
+
+function RemoveFood(message){
+    const dataBuffer = fs.readFileSync('./food.json');
+    const body = JSON.parse(dataBuffer);
+    const food = message.content.slice(5);
+    const index = body.indexOf(food);
+    if(index != -1){
+        body.splice(index, 1);
+        message.reply(`${food} 메뉴가 삭제 되었습니다.`);
+        fs.writeFileSync("food.json", JSON.stringify(body));
+    }
+    else{
+        message.reply(`${food} 메뉴는 이미 없습니다.`);
+    }
+}
+
+function RandomFood(message){
+    const dataBuffer = fs.readFileSync('./food.json');
+    const body = JSON.parse(dataBuffer);
+    
+    if(body.length == 0){
+        message.reply(`메뉴가 존재하지 않습니다.`);
+    }
+    else{
+        const index = Math.floor(Math.random() * body.length);
+        message.reply(`${body[index]} 를 드시는 게 좋겠어요.`);
+    }
+}
+
+function AllFood(message){
+    const dataBuffer = fs.readFileSync('./food.json');
+    const body = JSON.parse(dataBuffer);
+
+    if(body.length == 0){
+        message.reply(`메뉴가 존재하지 않습니다.`);
+    }
+    else{
+        let sentence = "\`\`\`✔ 메뉴판 ✔\n\n";
+        sentence += body[0];
+        for(let i = 1; i < body.length; ++i){
+            sentence += `, ${body[i]}`
+        }
+        sentence += "\`\`\`";
+        message.reply(`${sentence}`);
+    }
+}
 
 async function join(message){
     const voiceChannel = message.member.voice.channel;
