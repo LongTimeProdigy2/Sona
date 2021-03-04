@@ -1,13 +1,11 @@
 const Discord = require("discord.js");
-const {prefix, token} = require("./token.json");
+const {foodprefix, prefix, token} = require("./token.json");
 const ytdl = require("ytdl-core");
 const youtube = require("./src/Youtube");
 const fs = require("fs");
 
 const client = new Discord.Client();
-
 const queue = new Map();
-
 const findList = new Map();
 
 client.once("ready", () => {
@@ -74,7 +72,7 @@ client.on("message", async message => {
 · 메뉴추가: 추천할 메뉴 목록에 해당 메뉴를 추가합니다.
 · 메뉴삭제: 추천할 메뉴 목록에 해당 메뉴를 제거합니다.
 · 메뉴전체: 추천할 메뉴의 모든 목록을 보여줍니다.
-· 메뉴추천: 메뉴 목록에서 하나를 뽑아와 메뉴를 추천합니다.
+· 메뉴판  : 메뉴 목록에서 하나를 뽑아와 메뉴를 추천합니다.
             \`\`\``
             );
     }
@@ -87,7 +85,7 @@ client.on("message", async message => {
     else if(message.content.startsWith(`${prefix}메뉴추천`)){
         RandomFood(message);
     }
-    else if(message.content.startsWith(`${prefix}메뉴전체`)){
+    else if(message.content.startsWith(`${prefix}메뉴판`)){
         AllFood(message);
     }
     else {
@@ -96,13 +94,17 @@ client.on("message", async message => {
 });
 
 function AddFood(message){
-    const dataBuffer = fs.readFileSync('./food.json');
+    if(!fs.existsSync(`./${foodprefix}_${message.guild.id}.json`)){
+        fs.writeFileSync(`./${foodprefix}_${message.guild.id}.json`, "[]");
+    }
+
+    const dataBuffer = fs.readFileSync(`./${foodprefix}_${message.guild.id}.json`);
     const body = JSON.parse(dataBuffer);
     const food = message.content.slice(5);
     if(body.indexOf(food) == -1){
         body.push(food);
         message.reply(`${food} 메뉴가 추가 되었습니다.`);
-        fs.writeFileSync("food.json", JSON.stringify(body));
+        fs.writeFileSync(`${foodprefix}_${message.guild.id}.json`, JSON.stringify(body));
     }
     else{
         message.reply(`${food} 메뉴는 중복입니다.`);
@@ -110,48 +112,64 @@ function AddFood(message){
 }
 
 function RemoveFood(message){
-    const dataBuffer = fs.readFileSync('./food.json');
-    const body = JSON.parse(dataBuffer);
-    const food = message.content.slice(5);
-    const index = body.indexOf(food);
-    if(index != -1){
-        body.splice(index, 1);
-        message.reply(`${food} 메뉴가 삭제 되었습니다.`);
-        fs.writeFileSync("food.json", JSON.stringify(body));
+    if(fs.existsSync(`./${foodprefix}_${message.guild.id}.json`)){
+        const dataBuffer = fs.readFileSync(`./${foodprefix}_${message.guild.id}.json`);
+        const body = JSON.parse(dataBuffer);
+        const food = message.content.slice(5);
+        const index = body.indexOf(food);    
+
+        if(index != -1){
+            body.splice(index, 1);
+            message.reply(`${food} 메뉴가 삭제 되었습니다.`);
+            fs.writeFileSync(`${foodprefix}_${message.guild.id}.json`, JSON.stringify(body));
+        }
+        else{
+            message.reply(`${food} 메뉴는 이미 목록에 없습니다.`);
+        }
     }
     else{
-        message.reply(`${food} 메뉴는 이미 목록에 없습니다.`);
+        message.reply(`현재 이 방에서 생성된 메뉴판이 없습니다.`);
     }
 }
 
 function RandomFood(message){
-    const dataBuffer = fs.readFileSync('./food.json');
-    const body = JSON.parse(dataBuffer);
-    
-    if(body.length == 0){
-        message.reply(`메뉴가 존재하지 않습니다.`);
+    if(fs.existsSync(`./${foodprefix}_${message.guild.id}.json`)){
+        const dataBuffer = fs.readFileSync(`./${foodprefix}_${message.guild.id}.json`);
+        const body = JSON.parse(dataBuffer);
+        
+        if(body.length == 0){
+            message.reply(`메뉴가 존재하지 않습니다.`);
+        }
+        else{
+            const index = Math.floor(Math.random() * body.length);
+            message.reply(`${body[index]}을(를) 드시는 게 좋겠어요.`);
+        }
     }
     else{
-        const index = Math.floor(Math.random() * body.length);
-        message.reply(`${body[index]} 를 드시는 게 좋겠어요.`);
+        message.reply(`메뉴를 고를 메뉴판이 없어요!`);
     }
 }
 
 function AllFood(message){
-    const dataBuffer = fs.readFileSync('./food.json');
-    const body = JSON.parse(dataBuffer);
+    if(fs.existsSync(`./${foodprefix}_${message.guild.id}.json`)){
+        const dataBuffer = fs.readFileSync(`./${foodprefix}_${message.guild.id}.json`);
+        const body = JSON.parse(dataBuffer);
 
-    if(body.length == 0){
-        message.reply(`메뉴가 존재하지 않습니다.`);
+        if(body.length == 0){
+            message.reply(`메뉴가 존재하지 않습니다.`);
+        }
+        else{
+            let sentence = "\`\`\`✔ 메뉴판 ✔\n\n";
+            sentence += body[0];
+            for(let i = 1; i < body.length; ++i){
+                sentence += `, ${body[i]}`
+            }
+            sentence += "\`\`\`";
+            message.reply(`${sentence}`);
+        }
     }
     else{
-        let sentence = "\`\`\`✔ 메뉴판 ✔\n\n";
-        sentence += body[0];
-        for(let i = 1; i < body.length; ++i){
-            sentence += `, ${body[i]}`
-        }
-        sentence += "\`\`\`";
-        message.reply(`${sentence}`);
+        message.reply(`보여줄 수 있는 메뉴판이 없어요!`);
     }
 }
 
